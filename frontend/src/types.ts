@@ -461,6 +461,13 @@ export interface DashboardStats {
   [key: string]: number | undefined;
 }
 
+export interface RecomputeMonitoringResult {
+  dueDays: number;
+  outdatedDays: number;
+  markedDueForCheck: number;
+  markedOutdated: number;
+}
+
 export interface AdminUserRow {
   id: string; // admin_users.id
   userId: string;

@@ -41,6 +41,7 @@ import { validate } from "../middleware/validate.js";
 import { camelRow, camelRows } from "../utils/case.js";
 import { pp, qp } from "../utils/query.js";
 import { recordFieldChanges, writeAuditLog } from "../utils/audit.js";
+import { monitoringStatusCounts, recomputeMonitoringStatus } from "../services/monitoring.js";
 import { paginationMeta } from "./serializers.js";
 
 export const adminRouter = Router();
@@ -86,22 +87,27 @@ adminRouter.get(
   "/dashboard",
   ...gate(...ADMIN_ROLES),
   asyncHandler(async (_req, res) => {
-    const counts = await Promise.all([
-      query("SELECT COUNT(*)::int AS n FROM ai_websites WHERE deleted_at IS NULL"),
-      query("SELECT COUNT(*)::int AS n FROM ai_models WHERE deleted_at IS NULL"),
-      query("SELECT COUNT(*)::int AS n FROM categories WHERE deleted_at IS NULL"),
-      query("SELECT COUNT(*)::int AS n FROM users"),
-      query("SELECT COUNT(*)::int AS n FROM submissions WHERE status = 'pending_review'"),
-      query(
-        "SELECT COUNT(*)::int AS n FROM verification_records WHERE status IN ('unverified','partially_verified','outdated')",
-      ),
-      query("SELECT COUNT(*)::int AS n FROM admin_users"),
+    const [queryCounts, statusCounts] = await Promise.all([
+      Promise.all([
+        query("SELECT COUNT(*)::int AS n FROM ai_websites WHERE deleted_at IS NULL"),
+        query("SELECT COUNT(*)::int AS n FROM ai_models WHERE deleted_at IS NULL"),
+        query("SELECT COUNT(*)::int AS n FROM categories WHERE deleted_at IS NULL"),
+        query("SELECT COUNT(*)::int AS n FROM users"),
+        query("SELECT COUNT(*)::int AS n FROM submissions WHERE status = 'pending_review'"),
+        query(
+          "SELECT COUNT(*)::int AS n FROM verification_records WHERE status IN ('unverified','partially_verified','outdated')",
+        ),
+        query("SELECT COUNT(*)::int AS n FROM admin_users"),
+      ]),
+      monitoringStatusCounts(),
     ]);
     const recentAudit = await query(
       "SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 10",
     );
     const [websites, models, categories, users, pendingSubmissions, pendingVerification, adminUsers] =
-      counts.map((r) => Number(r.rows[0].n));
+      queryCounts.map((r) => Number(r.rows[0].n));
+    const dueForCheckWebsites = statusCounts["due_for_check"] ?? 0;
+    const outdatedWebsites = statusCounts["outdated"] ?? 0;
     res.json({
       data: {
         websites,
@@ -111,6 +117,9 @@ adminRouter.get(
         pendingSubmissions,
         pendingVerification,
         adminUsers,
+        dueForCheckWebsites,
+        outdatedWebsites,
+        monitoringCounts: statusCounts,
         recentAudit: camelRows(recentAudit.rows),
       },
     });
@@ -1014,6 +1023,21 @@ adminRouter.post(
     );
     await audit(req, "monitoring_check.create", "website", b.websiteId, null, camelRow(rows[0]));
     res.status(201).json({ data: camelRow(rows[0]) });
+  }),
+);
+
+/* -------- monitoring staleness recomputation (SAFE: date math only) ------- */
+/* No fetching, no scraping, no crawling. Escalates staleness from
+   last_checked_at age (>30d -> due_for_check, >90d -> outdated) and never
+   marks anything CURRENT — freshness requires a manual check. */
+
+adminRouter.post(
+  "/monitoring/recompute",
+  ...gate(...VERIFY_ROLES),
+  asyncHandler(async (req, res) => {
+    const result = await recomputeMonitoringStatus();
+    await audit(req, "monitoring.recompute", "monitoring", null, null, result);
+    res.json({ data: result });
   }),
 );
 

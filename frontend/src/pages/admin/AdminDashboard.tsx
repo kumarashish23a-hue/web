@@ -1,11 +1,31 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { adminApi } from '../../lib/api';
+import { adminApi, ApiError } from '../../lib/api';
 import { useFetch } from '../../lib/hooks';
+import { useToast } from '../../lib/toast';
 import { Card } from '../../components/Card';
 import { EmptyState, ErrorState, LoadingState } from '../../components/States';
 
 export function AdminDashboard() {
   const stats = useFetch(() => adminApi.dashboard().then((r) => r.data));
+  const { toast } = useToast();
+  const [recomputing, setRecomputing] = useState(false);
+
+  const recompute = async () => {
+    setRecomputing(true);
+    try {
+      const r = await adminApi.recomputeMonitoring();
+      toast(
+        `Monitoring recomputed: ${r.data.markedDueForCheck} due for check, ${r.data.markedOutdated} outdated.`,
+        'success',
+      );
+      stats.reload();
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : 'Recompute failed.', 'error');
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   const cards: { label: string; key: string; to?: string }[] = [
     { label: 'Websites', key: 'websites', to: '/admin/websites' },
@@ -14,6 +34,7 @@ export function AdminDashboard() {
     { label: 'Plans', key: 'plans', to: '/admin/pricing' },
     { label: 'Pending submissions', key: 'pendingSubmissions', to: '/admin/submissions' },
     { label: 'Verification queue', key: 'verificationQueue', to: '/admin/verification' },
+    { label: 'Due for check', key: 'dueForCheckWebsites', to: '/admin/verification' },
     { label: 'Outdated websites', key: 'outdatedWebsites', to: '/admin/verification' },
     { label: 'Users', key: 'users', to: '/admin/users' },
     { label: 'Sources', key: 'sources', to: '/admin/sources' },
@@ -61,6 +82,15 @@ export function AdminDashboard() {
           <Link to="/admin/models" className="btn btn-secondary btn-sm">
             Add model
           </Link>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={recomputing}
+            onClick={recompute}
+            title="Date-based only: escalates websites whose last check is older than 30/90 days. Never marks anything current."
+          >
+            {recomputing ? 'Recomputing…' : 'Recompute monitoring status'}
+          </button>
         </div>
       </div>
     </>

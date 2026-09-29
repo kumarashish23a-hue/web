@@ -34,6 +34,7 @@ import type {
   RecommendConstraints,
   RecommendItem,
   RecommendResponse,
+  RecomputeMonitoringResult,
   RegionalAvailability,
   SavedStack,
   SearchHistoryItem,
@@ -356,6 +357,10 @@ export const adminApi = {
     get<VerificationRecordItem[]>(adminPath('/verification'), { status }),
   verificationAction: (id: string, action: 'approve' | 'reject' | 'request_info' | 'mark_outdated', notes?: string) =>
     patch<VerificationRecordItem>(adminPath(`/verification/${id}`), { action, notes }),
+
+  // --- monitoring (date-based staleness only — no fetching/scraping) ---
+  recomputeMonitoring: () =>
+    post<RecomputeMonitoringResult>(adminPath('/monitoring/recompute'), {}),
 
   // --- submissions review ---
   submissions: (status?: string) =>

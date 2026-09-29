@@ -130,6 +130,7 @@ All routes require a valid Bearer token **and** an `admin_users` row. Minimum ro
 | Method & path | Min role | Purpose |
 |---|---|---|
 | `GET /admin/dashboard` | verifier | Stats: counts, verification coverage, monitoring flags, queue sizes |
+| `POST /admin/monitoring/recompute` | verifier | Staleness recompute: `current`→`due_for_check` (>30d), →`outdated` (>90d); date-based only, never marks `current` |
 | `GET /admin/websites` · `POST /admin/websites` | editor | List (paginated, incl. archived filter) · create |
 | `GET /admin/websites/:id` · `PUT /admin/websites/:id` · `DELETE /admin/websites/:id` | editor | Read · update (writes `change_history`) · archive (sets `deleted_at`) |
 | `GET /admin/models` · `POST /admin/models` | editor | Same pattern as websites |

@@ -66,6 +66,25 @@ This is how "the price was $10 last month" stays answerable. The admin console e
 
 **Important:** the tables are foundation only — **no automated checker runs yet**. Status transitions are manual (admin actions) until the automated-verification TODO is built. `monitoring_checks` rows record `checked_at`, `status`, and free-text `findings`.
 
+### Staleness recomputation (date-based only — safe, no scraping)
+
+`POST /api/v1/admin/monitoring/recompute` (admin console: dashboard → "Recompute monitoring status"; CLI: `npm run monitoring:recompute` in `backend/`) recomputes `ai_websites.monitoring_status` purely from `last_checked_at` age:
+
+| Age of `last_checked_at` | Transition |
+|---|---|
+| Older than 30 days | `current` → `due_for_check` |
+| Older than 90 days | `current` / `due_for_check` → `outdated` |
+
+Hard rules (enforced in `backend/src/services/monitoring.ts` and covered by tests):
+
+- **Escalation only.** The job never marks anything `current` (or `verified`) — freshness can only be asserted by a human re-check (`POST /admin/monitoring`), which stamps `last_checked_at`.
+- `changed` and `under_review` are never touched (a human is already on those).
+- `outdated` is never downgraded back to `due_for_check` or `current`.
+- Rows with `NULL` `last_checked_at` and soft-deleted rows are left alone.
+- Every run writes an `audit_logs` entry (`monitoring.recompute`) with the counts.
+
+**Real change detection — a price changed, a free tier disappeared, a new limit appeared — is a future MANUAL/admin step, not something this job does.** This job only tracks check-due dates from `last_checked_at`; it performs zero HTTP fetching, zero crawling, and zero scraping, and therefore cannot know whether a provider page changed. When a verifier opens the provider page by hand, records a `monitoring_checks` row, and updates the website, that human action is what may set statuses like `current` or `changed`.
+
 ## Verification queue process
 
 1. New/edited commercial facts enter the system as `unverified`.
