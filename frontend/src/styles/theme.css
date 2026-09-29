@@ -1,0 +1,69 @@
+/* Design tokens. Dark is the default theme; light overrides below. */
+
+:root,
+[data-theme='dark'] {
+  --bg: #0e1117;
+  --bg-soft: #141a24;
+  --surface: #171e2a;
+  --surface-2: #1d2635;
+  --border: #2a3446;
+  --border-soft: #212a3a;
+
+  --text: #e8ecf3;
+  --muted: #9aa5b8;
+  --faint: #6b7688;
+
+  --primary: #4f7cff;
+  --primary-hover: #3d68e8;
+  --on-primary: #ffffff;
+
+  --green: #2fae5f;
+  --green-bg: rgba(47, 174, 95, 0.14);
+  --amber: #d99a2b;
+  --amber-bg: rgba(217, 154, 43, 0.14);
+  --red: #e05555;
+  --red-bg: rgba(224, 85, 85, 0.14);
+  --blue: #4f7cff;
+  --blue-bg: rgba(79, 124, 255, 0.14);
+  --purple: #9a6bff;
+  --purple-bg: rgba(154, 107, 255, 0.14);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+
+  --nav-height: 60px;
+  --max-width: 1200px;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #f6f7f9;
+  --bg-soft: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eef1f6;
+  --border: #dfe4ec;
+  --border-soft: #e9edf3;
+
+  --text: #1a2230;
+  --muted: #5b6577;
+  --faint: #8a94a6;
+
+  --primary: #2f5fe0;
+  --primary-hover: #2449b8;
+  --on-primary: #ffffff;
+
+  --green: #1e7f43;
+  --green-bg: rgba(30, 127, 67, 0.1);
+  --amber: #a86f14;
+  --amber-bg: rgba(168, 111, 20, 0.12);
+  --red: #c23b3b;
+  --red-bg: rgba(194, 59, 59, 0.1);
+  --blue: #2f5fe0;
+  --blue-bg: rgba(47, 95, 224, 0.1);
+  --purple: #6a3fd4;
+  --purple-bg: rgba(106, 63, 212, 0.1);
+
+  --shadow: 0 8px 24px rgba(20, 30, 60, 0.08);
+  color-scheme: light;
+}
