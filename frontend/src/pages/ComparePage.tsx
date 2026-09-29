@@ -6,6 +6,7 @@ import { ComparisonTable } from '../components/ComparisonTable';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 import { useToast } from '../lib/toast';
 import type { CompareResult } from '../types';
 
@@ -80,6 +81,13 @@ export function ComparePage() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Compare AI tools side by side',
+          description:
+            'Put AI websites or models side by side — pricing, plans, access requirements and verification in one table.',
+        }}
+      />
       <div className="page-head">
         <h1>Compare</h1>
         <p>

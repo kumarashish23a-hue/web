@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from './lib/auth';
 import { LeavingSiteProvider } from './lib/leaving-site';
 import { ToastProvider } from './lib/toast';
 import { Button } from './components/Button';
+import { DefaultSeo, PageSeo } from './components/Seo';
 
 // Public pages
 import { Home } from './pages/Home';
@@ -198,6 +199,7 @@ function Footer() {
 function Layout() {
   return (
     <>
+      <DefaultSeo />
       <Navbar />
       <main className="container page">
         <Outlet />
@@ -257,11 +259,20 @@ export default function App() {
 
 function NotFound() {
   return (
-    <div className="empty-state-block">
-      <p className="empty-state-title">Page not found</p>
-      <p className="empty-state-hint">
-        The page you are looking for does not exist. <Link to="/">Go home</Link>.
-      </p>
-    </div>
+    <>
+      <PageSeo
+        meta={{
+          title: 'Page not found',
+          description: 'The page you are looking for does not exist.',
+          noindex: true,
+        }}
+      />
+      <div className="empty-state-block">
+        <p className="empty-state-title">Page not found</p>
+        <p className="empty-state-hint">
+          The page you are looking for does not exist. <Link to="/">Go home</Link>.
+        </p>
+      </div>
+    </>
   );
 }

@@ -1,8 +1,10 @@
 import { Link, useParams } from 'react-router-dom';
 import { modelsApi, sourcesApi, verificationApi } from '../lib/api';
 import { formatDate, useFetch } from '../lib/hooks';
+import { modelMeta } from '../lib/seo';
 import { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
+import { PageSeo } from '../components/Seo';
 import { AccessBadge, DemoBadge, VerificationBadge } from '../components/badges';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { ExternalLink } from '../lib/leaving-site';
@@ -47,6 +49,7 @@ export function ModelDetail() {
 
   return (
     <>
+      <PageSeo meta={modelMeta(model, timeline)} />
       <div className="detail-head">
         <div className="detail-meta-row">
           {model.isDemo && <DemoBadge />}

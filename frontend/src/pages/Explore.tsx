@@ -5,6 +5,7 @@ import { ModelCard } from '../components/ModelCard';
 import { WebsiteCard } from '../components/WebsiteCard';
 import { SearchBar } from '../components/SearchBar';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 import { useNavigate } from 'react-router-dom';
 
 export function Explore() {
@@ -15,6 +16,13 @@ export function Explore() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Explore AI tools & models',
+          description:
+            'Browse the full AI Discovery catalog — AI websites and models by category, with pricing, access requirements and verification status.',
+        }}
+      />
       <div className="page-head">
         <h1>Explore AI</h1>
         <p>

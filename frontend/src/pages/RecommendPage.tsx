@@ -5,6 +5,7 @@ import { RecommendationCard } from '../components/RecommendationCard';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import type { RecommendConstraints, RecommendItem } from '../types';
@@ -97,6 +98,13 @@ export function RecommendPage() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Get AI recommendations for your goal',
+          description:
+            'Describe your goal and get AI website and model recommendations matched to your needs, with reasons and verification status.',
+        }}
+      />
       <div className="page-head">
         <h1>Get AI recommendations</h1>
         <p>

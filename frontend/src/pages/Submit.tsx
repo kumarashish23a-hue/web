@@ -5,6 +5,7 @@ import { useFetch } from '../lib/hooks';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EmptyState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 import { useToast } from '../lib/toast';
 import type { SubmissionKind } from '../types';
 
@@ -69,6 +70,13 @@ export function Submit() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Submit a listing',
+          description:
+            'Suggest a new AI website or model for the AI Discovery catalog. Submissions are reviewed before publishing.',
+        }}
+      />
       <div className="page-head">
         <h1>Submit a listing</h1>
         <p>

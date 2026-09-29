@@ -7,6 +7,7 @@ import { SearchBar } from '../components/SearchBar';
 import { ModelCard } from '../components/ModelCard';
 import { WebsiteCard } from '../components/WebsiteCard';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 import { useToast } from '../lib/toast';
 import type { SearchFilters, SearchResults } from '../types';
 
@@ -78,6 +79,13 @@ export function SearchPage() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Search AI tools & models',
+          description:
+            'Search the AI Discovery catalog of AI websites and models by name, capability or category.',
+        }}
+      />
       <div className="page-head">
         <h1>Search</h1>
         <p>

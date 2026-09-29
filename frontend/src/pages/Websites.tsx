@@ -6,6 +6,7 @@ import { WebsiteCard } from '../components/WebsiteCard';
 import { SearchBar } from '../components/SearchBar';
 import { Pagination } from '../components/Pagination';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 
 export function Websites() {
   const [search, setSearch] = useState('');
@@ -25,6 +26,13 @@ export function Websites() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'AI websites — pricing & access compared',
+          description:
+            'Compare AI websites: plans, pricing, free tiers, access requirements and verification, checked against official sources.',
+        }}
+      />
       <div className="page-head">
         <h1>AI websites</h1>
         <p>

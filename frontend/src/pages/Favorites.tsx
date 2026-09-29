@@ -6,6 +6,7 @@ import { WebsiteCard } from '../components/WebsiteCard';
 import { ModelCard } from '../components/ModelCard';
 import { StackCard } from '../components/StackCard';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 import type { FavoriteItem, SavedStack } from '../types';
 
 export function Favorites() {
@@ -24,6 +25,13 @@ export function Favorites() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Your saved items',
+          description: 'Your saved AI websites, models and stacks.',
+          noindex: true,
+        }}
+      />
       <div className="page-head">
         <h1>Your saved items</h1>
         <p>Websites, models, and AI stacks you saved for later.</p>

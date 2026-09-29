@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { categoriesApi } from '../lib/api';
 import { useFetch } from '../lib/hooks';
+import { categoryMeta } from '../lib/seo';
+import { PageSeo } from '../components/Seo';
 import { ModelCard } from '../components/ModelCard';
 import { WebsiteCard } from '../components/WebsiteCard';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
@@ -17,6 +19,7 @@ export function CategoryDetail() {
 
   return (
     <>
+      <PageSeo meta={categoryMeta(category, websites.length, models.length)} />
       <div className="page-head">
         <h1>
           {category.icon ? `${category.icon} ` : ''}

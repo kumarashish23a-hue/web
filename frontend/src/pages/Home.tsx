@@ -9,6 +9,7 @@ import { WebsiteCard } from '../components/WebsiteCard';
 import { Button } from '../components/Button';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import type { AiModel, Category, Website } from '../types';
+import { PageSeo } from '../components/Seo';
 
 export function Home() {
   const navigate = useNavigate();
@@ -42,6 +43,13 @@ export function Home() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Find the right AI for your goal',
+          description:
+            'AI Discovery helps you find the right AI website or model for your goal — compare plans, pricing, access requirements, and verification status, checked against official sources.',
+        }}
+      />
       <section className="hero">
         <h1>Tell us what you want to do with AI</h1>
         <p>

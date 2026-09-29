@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 import { AdminSidebar } from '../../components/AdminSidebar';
+import { PageSeo } from '../../components/Seo';
 
 /**
  * Admin area shell. The role check here is UX only — the API enforces RBAC
@@ -25,6 +26,13 @@ export function AdminLayout() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Admin',
+          description: 'AI Discovery content management and verification.',
+          noindex: true,
+        }}
+      />
       <div className="page-head">
         <h1>Admin</h1>
         <p className="muted">

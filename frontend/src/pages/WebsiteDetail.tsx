@@ -9,7 +9,9 @@ import {
   type WebsiteDetail as WebsiteDetailType,
 } from '../lib/api';
 import { formatDate, formatPrice, useFetch } from '../lib/hooks';
+import { websiteMeta } from '../lib/seo';
 import { Card } from '../components/Card';
+import { PageSeo } from '../components/Seo';
 import { AccessBadge, DemoBadge, FreeBadge, VerificationBadge } from '../components/badges';
 import { PricingCard } from '../components/PricingCard';
 import { FavoriteButton } from '../components/FavoriteButton';
@@ -122,6 +124,7 @@ export function WebsiteDetail() {
 
   return (
     <>
+      <PageSeo meta={websiteMeta(website, plans)} />
       <div className="detail-head">
         <div className="detail-meta-row">
           {website.isDemo && <DemoBadge />}

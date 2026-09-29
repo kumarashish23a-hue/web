@@ -2,7 +2,9 @@ import { useParams } from 'react-router-dom';
 import { stacksApi } from '../lib/api';
 import { formatDate, useFetch } from '../lib/hooks';
 import { StackItemCard } from '../components/StackCard';
+import { PageSeo } from '../components/Seo';
 import { FavoriteButton } from '../components/FavoriteButton';
+import { truncate } from '../lib/seo';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 
 export function StackDetail() {
@@ -17,6 +19,13 @@ export function StackDetail() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: `AI stack: ${stack.title}`,
+          description: truncate(stack.goalText),
+          noindex: true,
+        }}
+      />
       <div className="page-head">
         <h1>{stack.title}</h1>
         <p>{stack.goalText}</p>

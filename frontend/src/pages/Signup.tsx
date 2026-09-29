@@ -4,6 +4,7 @@ import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { PageSeo } from '../components/Seo';
 
 export function Signup() {
   const { user, signup, loading } = useAuth();
@@ -36,7 +37,15 @@ export function Signup() {
   };
 
   return (
-    <div className="form-card">
+    <>
+      <PageSeo
+        meta={{
+          title: 'Sign up',
+          description: 'Create an AI Discovery account to save favorites and stacks.',
+          noindex: true,
+        }}
+      />
+      <div className="form-card">
       <Card>
         <h1>Create an account</h1>
         {error && <p className="form-error">{error}</p>}
@@ -86,5 +95,6 @@ export function Signup() {
         </p>
       </Card>
     </div>
+    </>
   );
 }

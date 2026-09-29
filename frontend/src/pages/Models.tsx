@@ -5,6 +5,7 @@ import { ModelCard } from '../components/ModelCard';
 import { SearchBar } from '../components/SearchBar';
 import { Pagination } from '../components/Pagination';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 
 export function Models() {
   const [search, setSearch] = useState('');
@@ -24,6 +25,13 @@ export function Models() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'AI models — availability & access compared',
+          description:
+            'Compare AI models: where to use each model, access requirements, limits and verification status.',
+        }}
+      />
       <div className="page-head">
         <h1>AI models</h1>
         <p>

@@ -7,6 +7,7 @@ import { useToast } from '../lib/toast';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
+import { PageSeo } from '../components/Seo';
 import type { UserPreferences } from '../types';
 
 const PREF_FIELDS: { key: keyof UserPreferences; label: string }[] = [
@@ -66,6 +67,13 @@ export function Profile() {
 
   return (
     <>
+      <PageSeo
+        meta={{
+          title: 'Your profile',
+          description: 'Your AI Discovery profile and preferences.',
+          noindex: true,
+        }}
+      />
       <div className="page-head">
         <h1>Your profile</h1>
         <p className="muted">{user?.email}</p>
