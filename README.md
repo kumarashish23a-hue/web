@@ -183,6 +183,11 @@ Copied from [`.env.example`](.env.example). Never commit `.env` (secrets stay ou
 | `AI_LLM_BASE_URL` | for LLM | — | OpenAI-compatible chat-completions base URL, e.g. `https://api.apinex.bond/v1`. Server-side only |
 | `AI_LLM_API_KEY` | for LLM | — | LLM API key (`OPENAI_API_KEY` also honored as fallback). Server-side only, **never** prefixed `VITE_` |
 | `AI_LLM_MODEL` | for LLM | — | Model id, e.g. `free/claude-sonnet-4.6` |
+| `SMTP_HOST` | for email | — | SMTP server used to send verification + password-reset emails. If unset, links are logged to the console in non-production; production returns a generic error |
+| `SMTP_PORT` | no | `587` | SMTP port (`465` enables implicit TLS) |
+| `SMTP_USER` / `SMTP_PASS` | for email auth | — | SMTP credentials (server-side only, never prefixed `VITE_`) |
+| `SMTP_FROM` | for email | — | Sender address, e.g. `AI Discover <no-reply@example.com>` |
+| `FRONTEND_URL` | no | `CORS_ORIGIN` | Base URL used to build email links (`/verify-email?token=…`, `/reset-password?token=…`) |
 
 ---
 

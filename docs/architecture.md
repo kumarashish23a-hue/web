@@ -99,6 +99,7 @@ JSON response  { data: [ { …, reasons, verification } ] }
 | Refresh token | JWT, **30 days**, stored in an **httpOnly cookie** (invisible to JS → XSS can't steal it) |
 | Secrets | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` from env only |
 | Email verify / password reset | Single-use token hashes in `email_verification_tokens` / `password_reset_tokens` with `expires_at` + `used_at` |
+| Email delivery | `src/services/mail.ts` (nodemailer SMTP, env `SMTP_*`). No SMTP in dev → link logged to console; no SMTP in prod → generic 503, token never exposed |
 | Sessions are stateless | No server session store; revocation model is token expiry (confirm against implementation for any blocklist) |
 
 ## RBAC matrix

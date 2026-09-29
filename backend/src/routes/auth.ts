@@ -24,6 +24,12 @@ import {
   verifyEmailToken,
   verifyRefreshToken,
 } from "../services/auth.js";
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+  passwordResetLink,
+  verificationLink,
+} from "../services/mail.js";
 
 export const authRouter = Router();
 
@@ -48,10 +54,15 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { email, password, displayName } = req.body;
     const user = await signupUser(email, password, displayName);
-    // TODO: deliver this token by email. Returned in non-production only so
-    // the flow is testable without an email provider.
+    // Deliver the verification token by email (dev: logged to console when
+    // SMTP is unconfigured). Returned in the response in non-production only
+    // so the flow stays testable without an email provider; never in prod.
     const verificationToken =
       config.nodeEnv === "production" ? undefined : await createEmailVerificationToken(user.id);
+    await sendVerificationEmail(
+      user.email,
+      verificationLink(verificationToken ?? (await createEmailVerificationToken(user.id))),
+    );
     const accessToken = issueTokens(res, user.id);
     res.status(201).json({ data: { user, accessToken, verificationToken } });
   }),
@@ -119,8 +130,10 @@ authRouter.post(
   validate(requestPasswordResetSchema),
   asyncHandler(async (req, res) => {
     // Always 200 — never reveal whether the email exists.
-    // TODO: deliver this token by email; returned in non-production only.
+    // The token is delivered by email (dev: logged to console when SMTP is
+    // unconfigured). Returned in the response in non-production only.
     const token = await createPasswordResetToken(req.body.email);
+    if (token) await sendPasswordResetEmail(req.body.email, passwordResetLink(token));
     res.json({
       data: { ok: true, resetToken: config.nodeEnv === "production" ? undefined : token },
     });

@@ -21,6 +21,27 @@ export const config = {
   aiLlmBaseUrl: process.env.AI_LLM_BASE_URL ?? "",
   aiLlmApiKey: process.env.AI_LLM_API_KEY ?? "",
   aiLlmModel: process.env.AI_LLM_MODEL ?? "",
+  /** Base URL used to build email links (email verify / password reset). */
+  get frontendUrl(): string {
+    return process.env.FRONTEND_URL ?? this.corsOrigin;
+  },
+  /** SMTP settings for outgoing mail. Lazy getters so tests can toggle
+   *  env vars without re-importing the module. */
+  get smtpHost(): string {
+    return process.env.SMTP_HOST ?? "";
+  },
+  get smtpPort(): number {
+    return Number(process.env.SMTP_PORT ?? 587);
+  },
+  get smtpUser(): string {
+    return process.env.SMTP_USER ?? "";
+  },
+  get smtpPass(): string {
+    return process.env.SMTP_PASS ?? "";
+  },
+  get smtpFrom(): string {
+    return process.env.SMTP_FROM ?? "";
+  },
 };
 
 export function assertProdSecrets(): void {
