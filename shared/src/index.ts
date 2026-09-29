@@ -487,6 +487,8 @@ export interface RecommendConstraints {
 export interface RecommendRequest {
   goal: string;
   constraints?: RecommendConstraints;
+  /** Opt-in per request: use the LLM goal parser/ranker when configured server-side. */
+  useLlm?: boolean;
 }
 
 export interface ParsedGoal {
@@ -495,6 +497,8 @@ export interface ParsedGoal {
   categorySlugs: string[];
   tasks: string[];
   aiTypes: AiType[];
+  /** Constraints the LLM inferred from the goal text (present when an LLM parsed the goal). */
+  inferredConstraints?: RecommendConstraints;
 }
 
 export interface RecommendationItem {
@@ -511,6 +515,10 @@ export interface RecommendResponse {
   items: RecommendationItem[];
   parsedGoal: ParsedGoal;
   totalCandidates: number;
+  /** Which engine produced this response. "llm" means the LLM re-ranked rule-based candidates. */
+  engine?: "rule-based" | "llm";
+  /** Model identifier used, when engine is "llm". */
+  llmModel?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -583,6 +591,7 @@ export const recommendConstraintsSchema = z.object({
 export const recommendSchema = z.object({
   goal: z.string().min(3).max(2000),
   constraints: recommendConstraintsSchema.optional(),
+  useLlm: z.boolean().optional(),
 });
 
 export const favoriteCreateSchema = z.object({

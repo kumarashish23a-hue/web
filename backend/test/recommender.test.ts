@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseGoal } from "../src/services/recommender.js";
-import { OpenAIProvider, RuleBasedProvider, createAIProvider } from "../src/services/ai/AIProvider.js";
+import { OpenAICompatibleProvider, OpenAIProvider, RuleBasedProvider, createAIProvider } from "../src/services/ai/AIProvider.js";
 import { api, data, makeAdmin, query, signupHelper, startServer, testApp } from "./helpers.js";
 
 test("parseGoal maps keywords to capabilities, categories, tasks and ai types", () => {
@@ -136,7 +136,7 @@ test("unverified items are never labelled verified in recommendations", async ()
   assert.ok(free2.reasons.some((x) => x.toLowerCase().includes("verified")));
 });
 
-test("AI provider factory defaults to rule-based; OpenAI stub throws", async () => {
+test("AI provider factory defaults to rule-based; LLM provider requires config", async () => {
   const p = createAIProvider();
   assert.equal(p.name, "rule-based");
   assert.ok(p instanceof RuleBasedProvider);
@@ -148,11 +148,19 @@ test("AI provider factory defaults to rule-based; OpenAI stub throws", async () 
   const recs = await p.generateRecommendations(req);
   assert.ok(Array.isArray(recs.items));
 
+  // No env config in tests -> factory falls back to rule-based even when asked for the LLM.
+  const fallback = createAIProvider({ useLlm: true });
+  assert.ok(fallback instanceof RuleBasedProvider);
+
   assert.throws(
-    () => new OpenAIProvider(""),
-    /not configured — set OPENAI_API_KEY/,
-    "OpenAIProvider constructor throws without a key",
+    () => new OpenAIProvider({}),
+    /AI_LLM_BASE_URL/,
+    "OpenAIProvider constructor throws without configuration",
   );
-  const stub = new OpenAIProvider("sk-test");
-  await assert.rejects(() => stub.generateRecommendations(req), /not implemented/);
+  const unconfigured = new OpenAIProvider({
+    baseUrl: "https://llm.example.test/v1",
+    apiKey: "sk-test",
+    model: "test-model",
+  });
+  assert.ok(unconfigured instanceof OpenAICompatibleProvider);
 });

@@ -3,8 +3,13 @@
  *
  * - RuleBasedProvider: real, deterministic implementation backed by the
  *   rule-based recommender. Default.
- * - OpenAIProvider: stub — constructor throws unless OPENAI_API_KEY is set;
- *   methods throw until a real implementation lands (TODO).
+ * - OpenAICompatibleProvider: real implementation against any
+ *   OpenAI-compatible /chat/completions endpoint, configured via
+ *   AI_LLM_BASE_URL / AI_LLM_API_KEY / AI_LLM_MODEL. The LLM parses the
+ *   goal and re-ranks DB-backed candidates; it can never invent websites,
+ *   models, prices, limits, or verification statuses. Any LLM failure
+ *   falls back to the rule-based engine.
+ * - OpenAIProvider: backwards-compatible alias for OpenAICompatibleProvider.
  */
 import type {
   ParsedGoal,
@@ -14,6 +19,7 @@ import type {
 } from "ai-discover-shared";
 import { config } from "../../config.js";
 import { parseGoal, recommend } from "../recommender.js";
+import { OpenAICompatibleProvider } from "./openaiCompatible.js";
 
 export interface AIProvider {
   readonly name: string;
@@ -47,47 +53,33 @@ export class RuleBasedProvider implements AIProvider {
   }
 
   async generateRecommendations(req: RecommendRequest): Promise<RecommendResponse> {
-    return recommend(req);
+    const res = await recommend(req);
+    return { ...res, engine: "rule-based" as const };
   }
 }
 
-export class OpenAIProvider implements AIProvider {
-  readonly name = "openai";
-  private apiKey: string;
-
-  constructor(apiKey?: string) {
-    const key = apiKey ?? config.openaiApiKey;
-    if (!key) {
-      throw new Error("OpenAIProvider not configured — set OPENAI_API_KEY");
-    }
-    this.apiKey = key;
-  }
-
-  async analyzeGoal(_goal: string): Promise<ParsedGoal> {
-    throw new Error("TODO: OpenAIProvider.analyzeGoal is not implemented yet");
-  }
-
-  async classifyTask(_goal: string): Promise<string[]> {
-    throw new Error("TODO: OpenAIProvider.classifyTask is not implemented yet");
-  }
-
-  async extractRequirements(
-    _goal: string,
-    _constraints?: RecommendConstraints,
-  ): Promise<RecommendConstraints> {
-    throw new Error("TODO: OpenAIProvider.extractRequirements is not implemented yet");
-  }
-
-  async generateRecommendations(_req: RecommendRequest): Promise<RecommendResponse> {
-    throw new Error("TODO: OpenAIProvider.generateRecommendations is not implemented yet");
-  }
+/** Backwards-compatible alias; prefer OpenAICompatibleProvider for new code. */
+export class OpenAIProvider extends OpenAICompatibleProvider {
+  override readonly name = "openai-compatible";
 }
 
-/** Provider factory: env AI_PROVIDER selects the implementation (default rule-based). */
-export function createAIProvider(): AIProvider {
+export { OpenAICompatibleProvider };
+
+/**
+ * Provider factory. The LLM is used only when explicitly requested:
+ * per-request via `useLlm: true`, or by default when AI_PROVIDER is
+ * "llm" / "openai". If the LLM is requested but not configured, we fall
+ * back to the rule-based engine rather than failing.
+ */
+export function createAIProvider(opts: { useLlm?: boolean } = {}): AIProvider {
   const which = (config.aiProvider || "rule-based").toLowerCase();
-  if (which === "openai") {
-    return new OpenAIProvider();
+  const wantLlm = opts.useLlm === true || which === "openai" || which === "llm";
+  if (wantLlm) {
+    try {
+      return new OpenAICompatibleProvider();
+    } catch {
+      return new RuleBasedProvider();
+    }
   }
   return new RuleBasedProvider();
 }

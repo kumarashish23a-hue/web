@@ -179,8 +179,10 @@ Copied from [`.env.example`](.env.example). Never commit `.env` (secrets stay ou
 | `CORS_ORIGIN` | no | `http://localhost:5173` | Allowed frontend origin |
 | `NODE_ENV` | no | `development` | `production` enables stricter defaults |
 | `VITE_API_BASE_URL` | yes (frontend) | — | Frontend → backend base URL, e.g. `http://localhost:4000/api/v1` (baked in at build time) |
-| `OPENAI_API_KEY` | future | — | LLM recommendation provider (stub only — throws "not configured"). Server-side only, **never** prefixed `VITE_` |
-| `ANTHROPIC_API_KEY` | future | — | Same as above, alternate provider |
+| `AI_PROVIDER` | no | `rule-based` | Set to `llm` (or `openai`) to make the LLM goal parser the default for `/recommend` |
+| `AI_LLM_BASE_URL` | for LLM | — | OpenAI-compatible chat-completions base URL, e.g. `https://api.apinex.bond/v1`. Server-side only |
+| `AI_LLM_API_KEY` | for LLM | — | LLM API key (`OPENAI_API_KEY` also honored as fallback). Server-side only, **never** prefixed `VITE_` |
+| `AI_LLM_MODEL` | for LLM | — | Model id, e.g. `free/claude-sonnet-4.6` |
 
 ---
 

@@ -17,6 +17,10 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
   aiProvider: process.env.AI_PROVIDER ?? "rule-based",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+  /** Generic OpenAI-compatible LLM endpoint (server-side only). */
+  aiLlmBaseUrl: process.env.AI_LLM_BASE_URL ?? "",
+  aiLlmApiKey: process.env.AI_LLM_API_KEY ?? "",
+  aiLlmModel: process.env.AI_LLM_MODEL ?? "",
 };
 
 export function assertProdSecrets(): void {

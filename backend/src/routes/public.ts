@@ -369,7 +369,7 @@ publicRouter.post(
   optionalAuth,
   validate(recommendSchema),
   asyncHandler(async (req, res) => {
-    const provider = createAIProvider();
+    const provider = createAIProvider({ useLlm: req.body.useLlm === true });
     const result = await provider.generateRecommendations({
       goal: req.body.goal,
       constraints: req.body.constraints,

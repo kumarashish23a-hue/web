@@ -61,7 +61,7 @@ Soft-deleted (`deleted_at` set) rows are never returned.
 |---|---|---|---|
 | `GET /search?q=` | — | `q` (required), `?page&limit`, `?type=website\|model` (confirm) | Ranked mixed results (keyword search; vector/semantic search is a TODO) |
 | `GET /compare?type=website\|model&ids=a,b,c` | — | `type`, comma-separated `ids` (UUIDs or slugs — confirm) | Side-by-side table: plans, limits, requirements, verification badges |
-| `POST /recommend` | — | `{ goal: string, constraints?: { preferFree?, noCreditCard?, noPayment?, noLogin?, beginnerFriendly?, apiRequired?, regionCode?, categories?: string[] } }` | Ranked items: each with `reasons: string[]` + `verification: { status, lastChecked }` |
+| `POST /recommend` | — | `{ goal: string, constraints?: { preferFree?, noCreditCard?, noPayment?, noLogin?, beginnerFriendly?, apiRequired?, regionCode?, categories?: string[] }, useLlm?: boolean }` | Ranked items: each with `reasons: string[]` + `verification: { status, lastChecked }`; response includes `engine: "rule-based" \| "llm"` (+ `llmModel`) |
 
 `POST /recommend` is rate-limited. See [recommendation-engine.md](recommendation-engine.md) for the scoring contract and a worked example.
 

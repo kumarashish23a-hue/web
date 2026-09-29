@@ -137,30 +137,50 @@ All `constraints` fields are optional; sensible defaults come from `user_prefere
 
 Enforced in code, not convention: before the engine labels an item `verified`, it must find a `verification_records` row with `status='verified'` for that entity. Otherwise the item reports its true status (`unverified`, `partially_verified`, …) and the UI badges it accordingly. **The recommender never upgrades a status.**
 
-## Adding the LLM provider later
+## LLM provider (live, opt-in)
 
-`backend/src/services/ai/AIProvider.ts` defines the seam:
-
-```ts
-interface AIProvider {
-  analyzeGoal(goal: string): unknown;          // richer goal understanding
-  classifyTask(input: string): unknown;        // task classification
-  extractRequirements(input: string): unknown; // structured requirements
-  generateRecommendations(input: unknown): unknown; // LLM-ranked suggestions
-}
-```
+`backend/src/services/ai/AIProvider.ts` defines the seam; `backend/src/services/ai/openaiCompatible.ts`
+implements it against any OpenAI-compatible `/chat/completions` endpoint.
 
 | Implementation | State |
 |---|---|
-| `RuleBasedProvider` | **Live** — implements the interface with the deterministic pipeline above |
-| `OpenAIProvider` | **Stub** — throws `"not configured"` |
+| `RuleBasedProvider` | **Live, default** — deterministic pipeline above |
+| `OpenAICompatibleProvider` (`OpenAIProvider` alias) | **Live, opt-in** — LLM goal parsing + re-ranking |
 
-To go live with an LLM later (all server-side):
+How it works:
 
-1. Set `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`) in the backend environment — **never** `VITE_`-prefixed, never in the frontend bundle.
-2. Implement `AIProvider` in `OpenAIProvider` (HTTP call, timeout, error mapping).
-3. Wire it in where the provider is selected (confirm wiring point against implementation).
-4. Keep the verification-honesty check **outside** the LLM: whatever the model suggests, statuses still come from `verification_records`. The LLM may propose candidates and draft reasons; it may not mint `verified` badges.
+1. **Goal parsing** — the LLM turns the natural-language goal into structured data
+   (keywords, capability/category slugs, tasks, AI types, inferred constraints like
+   `noCreditCard`). Slugs are validated against the `capabilities`/`categories`
+   tables — unknown slugs are dropped. Any LLM failure falls back to the rule-based
+   keyword parser.
+2. **Candidate sourcing** — the rule-based engine fetches and scores DB candidates
+   as usual. The LLM never sees raw DB rows beyond id/name/score/reasons/status.
+3. **Re-ranking** — the LLM orders the top candidates and may add 1–2 short
+   plain-language reasons each. `validateRanking()` drops any `(kind, id)` not in
+   the candidate set, so hallucinated references can never reach the user.
+4. **Verification honesty** — unchanged: statuses come from `verification_records`
+   only. The LLM cannot mint `verified` badges, prices, or limits.
+
+### Enabling it (all server-side)
+
+In the backend environment (never `VITE_`-prefixed, never in the frontend bundle):
+
+```bash
+AI_PROVIDER=llm                                  # or keep rule-based default
+AI_LLM_BASE_URL=https://api.apinex.bond/v1       # any OpenAI-compatible endpoint
+AI_LLM_API_KEY=sk-...                            # stays server-side
+AI_LLM_MODEL=free/claude-sonnet-4.6
+```
+
+Works with APInex, MiniMax (`https://api.minimax.io/v1`), OpenAI, or a local
+OpenAI-compatible server. `OPENAI_API_KEY` is still honored as a fallback for the key.
+
+Per-request opt-in without changing the default: `POST /api/v1/recommend` accepts
+`{ "goal": "...", "useLlm": true }`. If the LLM is requested but not configured,
+or the call fails/times out (15s), the endpoint silently falls back to the
+rule-based engine — recommendations never 500 because of the LLM. The response
+carries `engine: "rule-based" | "llm"` (and `llmModel` when applicable).
 
 No route, schema, or frontend changes are needed — that's the point of the seam.
 
