@@ -16,6 +16,7 @@ import { AccessBadge, DemoBadge, FreeBadge, VerificationBadge } from '../compone
 import { PricingCard } from '../components/PricingCard';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { ExternalLink } from '../lib/leaving-site';
+import { trackEvent } from '../lib/analytics';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import type {
   AccessRequirements,
@@ -76,6 +77,13 @@ export function WebsiteDetail() {
   const [timeline, setTimeline] = useState<VerificationRecordItem[]>([]);
   const [changes, setChanges] = useState<ChangeItem[]>([]);
   const [subError, setSubError] = useState<string | null>(null);
+
+  // Analytics: coarse page-view event (slug only, no PII).
+  useEffect(() => {
+    if (website) {
+      trackEvent('website_viewed', { entityType: 'website', entitySlug: website.slug, entityId: website.id });
+    }
+  }, [website]);
 
   useEffect(() => {
     if (!website) return;
@@ -139,7 +147,11 @@ export function WebsiteDetail() {
         {website.tagline && <p className="detail-tagline">{website.tagline}</p>}
         <div className="detail-meta-row">
           {website.officialUrl && (
-            <ExternalLink href={website.officialUrl} className="btn btn-primary btn-sm">
+            <ExternalLink
+              href={website.officialUrl}
+              className="btn btn-primary btn-sm"
+              analytics={{ entityType: 'website', entitySlug: website.slug, entityId: website.id }}
+            >
               Visit official website ↗
             </ExternalLink>
           )}
@@ -379,7 +391,12 @@ export function WebsiteDetail() {
                   <>
                     <dt>Docs</dt>
                     <dd>
-                      <ExternalLink href={access.apiAccess.docsUrl}>API docs ↗</ExternalLink>
+                      <ExternalLink
+                        href={access.apiAccess.docsUrl}
+                        analytics={{ entityType: 'website', entitySlug: website.slug, entityId: website.id }}
+                      >
+                        API docs ↗
+                      </ExternalLink>
                     </dd>
                   </>
                 )}
@@ -412,7 +429,10 @@ export function WebsiteDetail() {
               <ul className="pricing-limits">
                 {sources.map((s) => (
                   <li key={s.id}>
-                    <ExternalLink href={s.url}>
+                    <ExternalLink
+                        href={s.url}
+                        analytics={{ entityType: 'website', entitySlug: website.slug, entityId: website.id }}
+                      >
                       {s.pageTitle ?? s.url} ↗
                     </ExternalLink>{' '}
                     <span className="muted">({s.sourceType.replace(/_/g, ' ')})</span>

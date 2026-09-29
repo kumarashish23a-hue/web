@@ -372,6 +372,9 @@ export interface RecommendResponse {
     aiTypes: string[];
   };
   totalCandidates: number;
+  /** Which engine produced this response. Mirrors the backend/shared shape. */
+  engine?: 'rule-based' | 'llm';
+  llmModel?: string;
 }
 
 // ---------------------------------------------------------------------------

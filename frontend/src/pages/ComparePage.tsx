@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { compareApi, modelsApi, websitesApi } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 import { useFetch } from '../lib/hooks';
 import { ComparisonTable } from '../components/ComparisonTable';
 import { Button } from '../components/Button';
@@ -42,6 +43,10 @@ export function ComparePage() {
         .then((r) => {
           setResult(r.data);
           setLoading(false);
+          // Analytics: coarse only — what kind and how many were compared.
+          trackEvent('compare_used', {
+            meta: { type, itemCount: ids.length },
+          });
         })
         .catch((e: unknown) => {
           setError(e instanceof Error ? e.message : 'Could not load comparison.');

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import {
+  analyticsEventSchema,
   compareSchema,
   paginationSchema,
   recommendSchema,
@@ -472,5 +473,71 @@ publicRouter.get(
       [entityType, entityId],
     );
     res.json({ data: camelRows(rows) });
+  }),
+);
+
+/* ------------------------------- analytics ------------------------------ */
+
+/**
+ * POST /analytics/events — public, rate-limited, zod-validated.
+ * PRIVACY: only coarse, non-identifying fields are accepted. The shared
+ * analyticsEventSchema rejects unknown event names and (via a strict meta
+ * object) any meta key not explicitly allowlisted, so raw queries, goal
+ * text, PII, or keystrokes can never be stored. Auth is optional: when a
+ * valid Bearer <redacted> is present the event is linked to the user, otherwise
+ * user_id is NULL (anonymous).
+ */
+const analyticsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: { code: "RATE_LIMITED", message: "Too many requests, try again later" } },
+});
+
+const ANALYTICS_ENTITY_TABLES = {
+  website: "ai_websites",
+  model: "ai_models",
+} as const;
+
+publicRouter.post(
+  "/analytics/events",
+  analyticsLimiter,
+  optionalAuth,
+  validate(analyticsEventSchema, "body"),
+  asyncHandler(async (req, res) => {
+    const { eventName, entityType, entitySlug, entityId, meta } = req.body as {
+      eventName: string;
+      entityType?: "website" | "model";
+      entitySlug?: string;
+      entityId?: string;
+      meta?: Record<string, unknown>;
+    };
+
+    // Resolve slug -> uuid when only a slug was supplied (e.g. from the URL).
+    let resolvedEntityId: string | null = entityId ?? null;
+    if (!resolvedEntityId && entityType && entitySlug) {
+      const table = ANALYTICS_ENTITY_TABLES[entityType];
+      const { rows } = await query(
+        `SELECT id FROM ${table} WHERE slug = $1 AND deleted_at IS NULL LIMIT 1`,
+        [entitySlug],
+      );
+      if (rows.length > 0) resolvedEntityId = rows[0].id as string;
+    }
+
+    const { rows } = await query(
+      `INSERT INTO analytics_events (user_id, event_type, entity_type, entity_id, meta)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       RETURNING id, created_at`,
+      [
+        req.user?.id ?? null,
+        eventName,
+        entityType ?? null,
+        resolvedEntityId,
+        meta ? JSON.stringify(meta) : null,
+      ],
+    );
+    const row = rows[0] as { id: string; created_at: string };
+    res.status(201).json({ data: { id: row.id, createdAt: row.created_at } });
   }),
 );

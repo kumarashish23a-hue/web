@@ -813,3 +813,58 @@ export const adminUserUpdateSchema = z.object({
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RecommendInput = z.infer<typeof recommendSchema>;
+
+/* ------------------------------------------------------------------ */
+/* Analytics events                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Accepted analytics event names. PRIVACY: events carry only coarse,
+ * non-identifying fields — never the user's raw query/goal text, PII,
+ * or keystrokes.
+ */
+export const ANALYTICS_EVENTS = [
+  "search_performed",
+  "website_viewed",
+  "model_viewed",
+  "recommendation_generated",
+  "compare_used",
+  "external_website_clicked",
+  "favorite_added",
+  "submission_created",
+] as const;
+export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
+
+/**
+ * Coarse-only meta payload. `.strict()` rejects any key not listed here,
+ * so new free-text fields (goal text, queries, emails, names, …) can never
+ * be stored without an explicit, reviewed schema change.
+ */
+export const analyticsMetaSchema = z
+  .object({
+    /** e.g. search/compare: what was searched/compared ("website", "model", "all") */
+    type: z.string().max(40).optional(),
+    /** Category slug filter active at the time (search only) */
+    category: z.string().max(120).optional(),
+    /** Category slugs chosen as recommendation constraints (coarse, user-chosen) */
+    categories: z.array(z.string().max(120)).max(10).optional(),
+    /** Number of results returned */
+    resultCount: z.number().int().min(0).max(100_000).optional(),
+    /** Which engine produced a recommendation ("rule-based" | "llm") */
+    engine: z.enum(["rule-based", "llm"]).optional(),
+    /** Number of items compared */
+    itemCount: z.number().int().min(0).max(100).optional(),
+    /** favorite kind / submission kind ("website" | "model" | "stack" | …) */
+    kind: z.string().max(40).optional(),
+  })
+  .strict();
+
+export const analyticsEventSchema = z.object({
+  eventName: z.enum(ANALYTICS_EVENTS),
+  entityType: z.enum(["website", "model"]).optional(),
+  entitySlug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
+  entityId: z.string().uuid().optional(),
+  meta: analyticsMetaSchema.optional(),
+});
+
+export type AnalyticsEventInput = z.infer<typeof analyticsEventSchema>;

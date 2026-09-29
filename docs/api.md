@@ -65,6 +65,32 @@ Soft-deleted (`deleted_at` set) rows are never returned.
 
 `POST /recommend` is rate-limited. See [recommendation-engine.md](recommendation-engine.md) for the scoring contract and a worked example.
 
+## Analytics (public)
+
+| Method & path | Auth | Body | Response |
+|---|---|---|---|
+| `POST /analytics/events` | — (optional: Bearer <redacted> links the event to the user) | `{ eventName, entityType?, entitySlug?, entityId?, meta? }` | `201` `{ data: { id, createdAt } }` |
+
+Rate-limited (120/min per IP). Unknown `eventName` values are rejected with `400 VALIDATION_ERROR`.
+
+**Privacy contract:** the endpoint stores only coarse, non-identifying fields in `analytics_events`. The request schema's `meta` object is `.strict()` — any key not on the allowlist is rejected, so raw search queries, goal text, PII, or keystrokes can never be stored. When only a slug is supplied, the backend resolves it to the catalog UUID; unknown slugs leave `entity_id` NULL.
+
+### Event catalog
+
+| `eventName` | Fired from | `entityType`/`entitySlug`/`entityId` | Allowed `meta` keys |
+|---|---|---|---|
+| `search_performed` | Search page submit | — | `resultCount`, `category` |
+| `website_viewed` | Website detail page load | website slug + id | — |
+| `model_viewed` | Model detail page load | model slug + id | — |
+| `recommendation_generated` | Recommend page, on results | — | `engine` (`rule-based`\|`llm`), `resultCount`, `categories` (parsed category slugs) |
+| `compare_used` | Compare page, on results | — | `type`, `itemCount` |
+| `external_website_clicked` | Leaving-site interstitial, on **confirm** | website/model context of the link | — |
+| `favorite_added` | Favorite heart toggle, on add | website/model id (stacks: kind only) | `kind` |
+| `submission_created` | Submit page, on success | — | `kind` |
+
+The frontend fires these via `frontend/src/lib/analytics.ts` (`trackEvent`) — fire-and-forget `fetch` with `keepalive`, fully failure-silent so analytics can never break UX. `meta` values are primitives only (string ≤ 200 chars, int, boolean; `categories` ≤ 10 slugs).
+
+
 ## Pricing / access / sources / verification (public)
 
 | Method & path | Auth | Params | Response |

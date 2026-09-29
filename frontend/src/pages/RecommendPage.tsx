@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { recommendApi, stacksApi } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 import { RecommendationCard } from '../components/RecommendationCard';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -62,6 +63,16 @@ export function RecommendPage() {
       });
       setItems(data.items);
       setRan(true);
+      // Analytics: coarse only — engine + counts, never the goal text.
+      trackEvent('recommendation_generated', {
+        meta: {
+          engine: data.engine ?? 'rule-based',
+          resultCount: data.items.length,
+          ...(data.parsedGoal?.categorySlugs?.length
+            ? { categories: data.parsedGoal.categorySlugs.slice(0, 10) }
+            : {}),
+        },
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Recommendation failed.');
     } finally {

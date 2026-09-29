@@ -356,6 +356,20 @@ CREATE TABLE search_history (
   created_at timestamptz DEFAULT now()
 );
 
+-- Contract-derived: analytics_events from database/migrations/004_users.sql.
+-- Only ever written by POST /api/v1/analytics/events (coarse, non-PII fields).
+CREATE TABLE analytics_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  event_type text NOT NULL,
+  entity_type text,
+  entity_id uuid,
+  meta jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_analytics_events_user_id ON analytics_events (user_id);
+
 CREATE TABLE submissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id),

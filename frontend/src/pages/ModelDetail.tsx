@@ -8,6 +8,7 @@ import { PageSeo } from '../components/Seo';
 import { AccessBadge, DemoBadge, VerificationBadge } from '../components/badges';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { ExternalLink } from '../lib/leaving-site';
+import { trackEvent } from '../lib/analytics';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import type { SourceRecord, VerificationRecordItem } from '../types';
 
@@ -18,6 +19,13 @@ export function ModelDetail() {
 
   const [sources, setSources] = useState<SourceRecord[]>([]);
   const [timeline, setTimeline] = useState<VerificationRecordItem[]>([]);
+
+  // Analytics: coarse page-view event (slug only, no PII).
+  useEffect(() => {
+    if (model) {
+      trackEvent('model_viewed', { entityType: 'model', entitySlug: model.slug, entityId: model.id });
+    }
+  }, [model]);
 
   useEffect(() => {
     if (!model) return;
@@ -201,7 +209,10 @@ export function ModelDetail() {
               <ul className="pricing-limits">
                 {sources.map((s) => (
                   <li key={s.id}>
-                    <ExternalLink href={s.url}>
+                    <ExternalLink
+                      href={s.url}
+                      analytics={{ entityType: 'model', entitySlug: model.slug, entityId: model.id }}
+                    >
                       {s.pageTitle ?? s.url} ↗
                     </ExternalLink>{' '}
                     <span className="muted">({s.sourceType.replace(/_/g, ' ')})</span>

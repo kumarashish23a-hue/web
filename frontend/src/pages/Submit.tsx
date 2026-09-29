@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { submissionsApi, ApiError } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 import { formatDate } from '../lib/hooks';
 import { useFetch } from '../lib/hooks';
 import { Button } from '../components/Button';
@@ -53,6 +54,8 @@ export function Submit() {
         sourceUrl.trim() || undefined,
       );
       toast('Submitted — it is now pending review.', 'success');
+      // Analytics: coarse only — the submission kind, never the payload.
+      trackEvent('submission_created', { meta: { kind } });
       setName('');
       setUrl('');
       setDescription('');

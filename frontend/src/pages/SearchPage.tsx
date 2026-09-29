@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { categoriesApi, searchApi } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 import { useFetch } from '../lib/hooks';
 import { FilterPanel, EMPTY_FILTERS } from '../components/FilterPanel';
 import { SearchBar } from '../components/SearchBar';
@@ -43,6 +44,13 @@ export function SearchPage() {
       const { data } = await searchApi.query(query);
       setResults(data);
       setSearched(true);
+      // Analytics: coarse only — never the query text.
+      trackEvent('search_performed', {
+        meta: {
+          resultCount: (data.websites?.length ?? 0) + (data.models?.length ?? 0),
+          ...(f.category && f.category !== 'any' ? { category: f.category } : {}),
+        },
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed.');
       toast('Search failed. Please try again.', 'error');

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { favoritesApi, ApiError } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { Button } from './Button';
@@ -48,6 +49,12 @@ export function FavoriteButton({
         const { data } = await favoritesApi.add(kind, entityId);
         setFavoriteId(data.id);
         toast('Saved to your favorites.', 'success');
+        // Analytics: coarse only — the kind favorited, never titles/URLs.
+        trackEvent('favorite_added', {
+          entityType: kind === 'stack' ? undefined : kind,
+          entityId: kind === 'stack' ? undefined : entityId,
+          meta: { kind },
+        });
       }
       onChanged?.();
     } catch (e) {
