@@ -6,18 +6,19 @@
  * generated types, these local definitions should be replaced by imports
  * from 'ai-discover-shared'.
  *
- * ASSUMPTIONS about backend shapes (not fully pinned by the CONTRACT):
+ * Backend shapes (verified against the Express implementation):
  *  - List/detail payloads aggregate verification as
  *    `verification: { status, lastChecked } | null`.
  *  - GET /models/:slug includes `availability` (per-website free/limits/card/region).
- *  - GET /compare returns { type, columns, rows } (table generated from API data).
- *  - GET /search returns { websites, models }.
+ *  - GET /compare returns { type, items: [{ id, name, slug }], rows: [{ label, values }] }.
+ *  - GET /search returns { websites, models, categories, capabilities }.
  *  - GET /auth/me returns { user, adminRole }.
  *  - GET /categories/:slug returns { category, websites, models }.
- *  - GET /recommend returns { items } (ranked, with reasons + verification).
- *  - GET /pricing?website=<slug> returns { plans }.
- *  - GET /access?website=<slug> returns { requirements, paymentMethods, cancellation, apiAccess, regions }.
- *  - GET /sources?entity=<type>:<id> and GET /verification?entity=<type>:<id>.
+ *  - POST /recommend returns { items, parsedGoal, totalCandidates }.
+ *  - GET /pricing?website=<slug> returns { website: { id, name, slug }, plans }.
+ *  - GET /access?website=<slug> returns { website, requirements, paymentMethods, cancellation, apiAccess, regions }.
+ *  - GET /sources?entityType=&entityId= and GET /verification?entityType=&entityId=.
+ *  - GET /admin/change-history?entityType=&entityId= (admin only).
  */
 
 // ---------------------------------------------------------------------------
@@ -320,7 +321,7 @@ export interface SearchFilters {
   region: string; // country code or ''
 }
 
-export interface CompareColumn {
+export interface CompareItem {
   id: string;
   name: string;
   slug: string;
@@ -328,12 +329,12 @@ export interface CompareColumn {
 
 export interface CompareRow {
   label: string;
-  values: (string | null)[];
+  values: (string | string[] | null)[];
 }
 
 export interface CompareResult {
   type: 'website' | 'model';
-  columns: CompareColumn[];
+  items: CompareItem[];
   rows: CompareRow[];
 }
 
@@ -359,6 +360,18 @@ export interface RecommendItem {
   reasons: string[];
   verification: { status: VerificationStatus | null; lastChecked: string | null };
   isDemo?: boolean;
+}
+
+export interface RecommendResponse {
+  items: RecommendItem[];
+  parsedGoal: {
+    keywords: string[];
+    capabilitySlugs: string[];
+    categorySlugs: string[];
+    tasks: string[];
+    aiTypes: string[];
+  };
+  totalCandidates: number;
 }
 
 // ---------------------------------------------------------------------------

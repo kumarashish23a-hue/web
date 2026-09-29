@@ -55,7 +55,8 @@ export function Profile() {
     e.preventDefault();
     setPwMsg(null);
     try {
-      // ASSUMPTION: POST /auth/change-password { currentPassword, newPassword }.
+      // Password change goes through the reset-email flow (no
+      // POST /auth/change-password endpoint exists by design).
       await authApi.requestPasswordReset(user?.email ?? '');
       setPwMsg('Password change is handled via a reset email — check your inbox.');
     } catch (err) {

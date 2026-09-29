@@ -33,6 +33,7 @@ import type {
   PlatformUserRow,
   RecommendConstraints,
   RecommendItem,
+  RecommendResponse,
   RegionalAvailability,
   SavedStack,
   SearchHistoryItem,
@@ -228,11 +229,16 @@ export const categoriesApi = {
 };
 
 export const pricingApi = {
-  /** ASSUMPTION: returns `{ data: { plans: Plan[] } }`. */
-  byWebsite: (website: string) => get<{ plans: Plan[] }>('/pricing', { website }),
+  /** Returns `{ data: { website: { id, name, slug }, plans: Plan[] } }`. */
+  byWebsite: (website: string) =>
+    get<{ website: { id: string; name: string; slug: string }; plans: Plan[] }>(
+      '/pricing',
+      { website },
+    ),
 };
 
 export interface WebsiteAccessInfo {
+  website: { id: string; name: string; slug: string };
   requirements: AccessRequirements | null;
   paymentMethods: PaymentMethod[];
   cancellation: CancellationPolicy | null;
@@ -241,21 +247,23 @@ export interface WebsiteAccessInfo {
 }
 
 export const accessApi = {
-  /** ASSUMPTION: returns the access bundle in one object (see WebsiteAccessInfo). */
+  /** Returns the access bundle in one object (see WebsiteAccessInfo). */
   byWebsite: (website: string) => get<WebsiteAccessInfo>('/access', { website }),
 };
 
 export const sourcesApi = {
-  /** ASSUMPTION: `entity` is encoded as `<type>:<id>`, e.g. `website:<uuid>`. */
-  list: (entity: string) => get<SourceRecord[]>('/sources', { entity }),
+  /** GET /sources?entityType=website&entityId=<uuid> */
+  list: (entityType: string, entityId: string) =>
+    get<SourceRecord[]>('/sources', { entityType, entityId }),
 };
 
 export const verificationApi = {
-  /** ASSUMPTION: `entity` is encoded as `<type>:<id>`, e.g. `website:<uuid>`. */
-  list: (entity: string) =>
-    get<VerificationRecordItem[]>('/verification', { entity }),
-  /** ASSUMPTION: change history is exposed under /verification/changes?entity=. */
-  changes: (entity: string) => get<ChangeItem[]>('/verification/changes', { entity }),
+  /** GET /verification?entityType=website&entityId=<uuid> */
+  list: (entityType: string, entityId: string) =>
+    get<VerificationRecordItem[]>('/verification', { entityType, entityId }),
+  /** Admin-only change history: GET /admin/change-history?entityType=&entityId= */
+  changes: (entityType: string, entityId: string) =>
+    get<ChangeItem[]>('/admin/change-history', { entityType, entityId }),
 };
 
 // ---------------------------------------------------------------------------
@@ -269,16 +277,16 @@ export const searchApi = {
 };
 
 export const compareApi = {
-  /** ASSUMPTION: returns `{ data: { type, columns, rows } }` — the table is
-   *  generated from API data, so the frontend never hard-codes attributes. */
+  /** Returns `{ data: { type, items: [{ id, name, slug }], rows: [{ label, values }] } }`
+   *  — the table is generated from API data, so the frontend never hard-codes attributes. */
   get: (type: 'website' | 'model', ids: string[]) =>
     get<CompareResult>('/compare', { type, ids: ids.join(',') }),
 };
 
 export const recommendApi = {
-  /** ASSUMPTION: returns `{ data: { items } }` — ranked items with reasons[]. */
+  /** Returns `{ data: { items, parsedGoal, totalCandidates } }` — ranked items with reasons[]. */
   get: (goal: string, constraints?: RecommendConstraints) =>
-    post<{ items: RecommendItem[] }>('/recommend', { goal, constraints }),
+    post<RecommendResponse>('/recommend', { goal, constraints }),
 };
 
 // ---------------------------------------------------------------------------

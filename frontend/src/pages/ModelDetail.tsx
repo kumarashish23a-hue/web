@@ -23,8 +23,8 @@ export function ModelDetail() {
     (async () => {
       try {
         const [s, v] = await Promise.all([
-          sourcesApi.list(`model:${model.id}`).then((r) => r.data),
-          verificationApi.list(`model:${model.id}`).then((r) => r.data),
+          sourcesApi.list('model', model.id).then((r) => r.data),
+          verificationApi.list('model', model.id).then((r) => r.data),
         ]);
         if (!cancelled) {
           setSources(s);

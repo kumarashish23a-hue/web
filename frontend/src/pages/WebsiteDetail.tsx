@@ -83,9 +83,13 @@ export function WebsiteDetail() {
         const [p, a, s, v, c] = await Promise.all([
           pricingApi.byWebsite(website.slug).then((r) => r.data.plans),
           accessApi.byWebsite(website.slug).then((r) => r.data),
-          sourcesApi.list(`website:${website.id}`).then((r) => r.data),
-          verificationApi.list(`website:${website.id}`).then((r) => r.data),
-          verificationApi.changes(`website:${website.id}`).then((r) => r.data),
+          sourcesApi.list('website', website.id).then((r) => r.data),
+          verificationApi.list('website', website.id).then((r) => r.data),
+          // Change history is admin-only; non-fatal for public viewers.
+          verificationApi
+            .changes('website', website.id)
+            .then((r) => r.data)
+            .catch(() => []),
         ]);
         if (!cancelled) {
           setPlans(p);
