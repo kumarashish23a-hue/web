@@ -102,6 +102,33 @@ JSON response  { data: [ { …, reasons, verification } ] }
 | Email delivery | `src/services/mail.ts` (nodemailer SMTP, env `SMTP_*`). No SMTP in dev → link logged to console; no SMTP in prod → generic 503, token never exposed |
 | Sessions are stateless | No server session store; revocation model is token expiry (confirm against implementation for any blocklist) |
 
+### OAuth integration
+
+Authentication stays modular: OAuth is **not implemented** — but the seam a
+future provider route needs already exists in `backend/src/services/auth.ts`,
+so no OAuth login can ever require duplicating user/session logic.
+
+**The seam.** The functions a provider callback would call are:
+
+| Step | Function | Notes |
+|---|---|---|
+| Find-or-create user | `findOrCreateUserByEmail(email, { displayName, emailVerified })` | Email is lowercased; returns the existing user or inserts a password-less one (`password_hash` is NULL — see `database/migrations/006_users_oauth.sql`). Race-safe on concurrent callbacks (unique-violation re-read). |
+| Issue tokens | `signAccessToken(userId)`, `signRefreshToken(userId)`, `refreshCookieOptions()` | The exact same JWT/cookie issuance password login uses (`POST /login` in `routes/auth.ts` composes these). |
+| Fetch the user | `getUserById(userId)` | Camel-cased `User` record for the response. |
+
+**Steps to add a provider** (e.g. Google):
+1. New route (e.g. `POST /api/v1/auth/oauth/:provider/callback`) **behind the auth rate limiter**.
+2. Verify the provider's **ID token server-side** (fetch the provider's JWKS, check `aud`, `iss`, expiry) and read the email **from the verified token claims**.
+3. Call `findOrCreateUserByEmail(email, { displayName: <name claim>, emailVerified: <email_verified claim> })`.
+4. Sign the tokens (`signAccessToken` / `signRefreshToken`), set the refresh cookie via `refreshCookieOptions()`, return `{ user, accessToken }` like `/login` does.
+
+**Must NOT do:**
+- Never accept a client-supplied email as the identity — only the email inside the server-verified ID token.
+- Never store provider access/refresh tokens unless encrypted at rest with a dedicated KMS/secret key (there is no encrypted credential store for this today — don't improvise one with a plaintext column).
+- Never write a second "login" path that builds JWTs or inserts users directly; go through the seam functions above so sessions stay identical.
+- A NULL-`password_hash` user cannot authenticate via `/login` (`loginUser` rejects with `INVALID_CREDENTIALS`); the only way to add a password later is the normal reset flow.
+- A provider-linking table (e.g. `oauth_identities(provider, provider_user_id, user_id)`) will be needed before *linking* an OAuth login to an existing password account — out of scope until a provider is added.
+
 ## RBAC matrix
 
 Roles form a strict hierarchy: **super_admin > admin > editor > verifier**. Checks run **server-side** on every admin route — the frontend hides buttons, the backend enforces.

@@ -60,15 +60,20 @@ function toUser(row: Record<string, unknown>): User {
   return camelRow<User>(row);
 }
 
-export async function signupUser(email: string, password: string, displayName?: string): Promise<User> {
-  const lower = email.toLowerCase();
-  const existing = await query("SELECT id FROM users WHERE email = $1", [lower]);
-  if (existing.rows.length > 0) throw conflict("An account with this email already exists", "EMAIL_TAKEN");
-
-  const passwordHash = await hashPassword(password);
+/**
+ * Insert the users row plus the rows every new account needs (profile,
+ * preferences). `passwordHash` may be null for password-less OAuth users —
+ * see migration 006_users_oauth.sql. Password flows are unaffected.
+ */
+async function insertUserRow(
+  email: string,
+  passwordHash: string | null,
+  displayName?: string,
+  emailVerified?: boolean,
+): Promise<User> {
   const { rows } = await query(
-    "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, email_verified, created_at, updated_at",
-    [lower, passwordHash],
+    "INSERT INTO users (email, password_hash, email_verified) VALUES ($1, $2, $3) RETURNING id, email, email_verified, created_at, updated_at",
+    [email, passwordHash, emailVerified ?? false],
   );
   const user = toUser(rows[0]);
   await query("INSERT INTO profiles (id, display_name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING", [
@@ -82,6 +87,63 @@ export async function signupUser(email: string, password: string, displayName?: 
   return user;
 }
 
+export async function signupUser(email: string, password: string, displayName?: string): Promise<User> {
+  const lower = email.toLowerCase();
+  const existing = await query("SELECT id FROM users WHERE email = $1", [lower]);
+  if (existing.rows.length > 0) throw conflict("An account with this email already exists", "EMAIL_TAKEN");
+
+  const passwordHash = await hashPassword(password);
+  return insertUserRow(lower, passwordHash, displayName);
+}
+
+/**
+ * OAuth seam: turn an externally-verified identity into an app user.
+ *
+ * This is the single entry point a future OAuth provider route must use:
+ * the provider verifies its ID token server-side, then calls this with the
+ * verified email (never a client-supplied one). Existing users are returned
+ * as-is (their `email_verified` flag is upgraded if the IdP verified it);
+ * otherwise a password-less user is created. Session/token issuance then
+ * goes through the same `signAccessToken` / `signRefreshToken` /
+ * `refreshCookieOptions` helpers as password login — no duplicated logic.
+ *
+ * No provider tokens are accepted or stored here.
+ */
+export async function findOrCreateUserByEmail(
+  email: string,
+  opts: { displayName?: string; emailVerified?: boolean } = {},
+): Promise<User> {
+  const lower = email.toLowerCase();
+  const { rows } = await query(
+    "SELECT id, email, email_verified, created_at, updated_at FROM users WHERE email = $1",
+    [lower],
+  );
+  if (rows.length > 0) {
+    if (opts.emailVerified && !rows[0].email_verified) {
+      const updated = await query(
+        "UPDATE users SET email_verified = true, updated_at = now() WHERE id = $1 RETURNING id, email, email_verified, created_at, updated_at",
+        [rows[0].id],
+      );
+      return toUser(updated.rows[0]);
+    }
+    return toUser(rows[0]);
+  }
+  try {
+    return await insertUserRow(lower, null, opts.displayName, opts.emailVerified);
+  } catch (err) {
+    // Concurrent OAuth callbacks for the same new email: one insert wins,
+    // the other hits the unique constraint — re-read instead of erroring.
+    if (err instanceof Error && "code" in err && (err as { code?: string }).code === "23505") {
+      const reread = await query(
+        "SELECT id, email, email_verified, created_at, updated_at FROM users WHERE email = $1",
+        [lower],
+      );
+      if (reread.rows.length > 0) return toUser(reread.rows[0]);
+    }
+    throw err;
+  }
+}
+
 export async function loginUser(email: string, password: string): Promise<User> {
   const lower = email.toLowerCase();
   const { rows } = await query(
@@ -89,6 +151,9 @@ export async function loginUser(email: string, password: string): Promise<User> 
     [lower],
   );
   if (rows.length === 0) throw unauthorized("Invalid email or password", "INVALID_CREDENTIALS");
+  // Password-less (OAuth) users have NULL password_hash and cannot log in
+  // with a password; they can set one later via the reset flow.
+  if (rows[0].password_hash == null) throw unauthorized("Invalid email or password", "INVALID_CREDENTIALS");
   const ok = await verifyPassword(password, String(rows[0].password_hash));
   if (!ok) throw unauthorized("Invalid email or password", "INVALID_CREDENTIALS");
   return toUser(rows[0]);
