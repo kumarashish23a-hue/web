@@ -29,7 +29,7 @@ Never bake secrets into the Docker image — inject them at deploy time
 | `AI_LLM_BASE_URL` | for LLM | — | OpenAI-compatible chat-completions base URL. Server-side only |
 | `AI_LLM_API_KEY` | for LLM | — | LLM API key. **Never** prefix `VITE_` |
 | `AI_LLM_MODEL` | for LLM | — | Model id (e.g. `free/claude-sonnet-4.6`) |
-| `SMTP_*` | optional | — | Reserved for a future transactional mailer — **there is no mailer yet**. Verification/reset tokens are generated but no email is sent (see checklist) |
+| `SMTP_*` | optional | — | Transactional mailer (nodemailer): `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `FRONTEND_URL` (link base, defaults to `CORS_ORIGIN`). If unset and `NODE_ENV=production`, signup/reset return `503 EMAIL_UNAVAILABLE`; in dev the links are logged to the console |
 | `VITE_API_BASE_URL` | yes (frontend) | — | Frontend → backend base URL, e.g. `https://api.example.com/api/v1`. **Baked in at build time** — rebuild the frontend if this changes |
 
 Generate strong secrets (run once, store in your secret manager):
@@ -40,7 +40,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 ---
 
-## 2. Database — migrations (001 → 005, in order)
+## 2. Database — migrations (001 → 006, in order)
 
 Use a managed Postgres 14+ (or your own server). The backend container does
 not run migrations — do it once before first boot:
@@ -53,7 +53,7 @@ for f in database/migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done
 ```
 
 This creates the catalog (001), commerce (002), verification (003), users
-(004), and admin (005) schemas. Verify:
+(004), admin (005), and OAuth-seam (006, nullable `password_hash`) schemas. Verify:
 
 ```bash
 psql "$DATABASE_URL" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1;"
@@ -159,7 +159,7 @@ already probes this endpoint.
 - [ ] Migrations `001`→`005` applied to the production database, in order
 - [ ] Secrets set at deploy time: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` (real, random, unique per environment — never committed, never in the image)
 - [ ] Demo-seed decision: `001_demo_seed.sql` **not** loaded into production; `002_real_starter.sql` loaded only if wanted
-- [ ] SMTP / email: understood that **no mailer exists yet** — email-verification and password-reset tokens are generated but no email is sent; don't promise email flows to users until a mailer lands
+- [ ] SMTP / email: `SMTP_HOST/PORT/USER/PASS/FROM` set for real sending, or understood that in production an unconfigured mailer makes signup/reset return `503 EMAIL_UNAVAILABLE` (dev logs the links to the console)
 - [ ] `CORS_ORIGIN` = the real frontend origin (no `localhost` leftovers); `VITE_API_BASE_URL` points at the deployed API and was baked in at frontend build time
 - [ ] `NODE_ENV=production` on the backend; `DB_ADAPTER` unset (never `pglite` in prod)
 - [ ] First `super_admin` bootstrapped (docs/admin.md); admin console verified at `/admin`

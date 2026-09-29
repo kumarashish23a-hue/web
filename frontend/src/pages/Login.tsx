@@ -81,6 +81,8 @@ export function Login() {
         </form>
         <p className="form-note">
           No account yet? <Link to="/signup">Sign up</Link>
+          {' · '}
+          <Link to="/reset-password">Forgot password?</Link>
         </p>
       </Card>
     </div>
