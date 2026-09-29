@@ -1,0 +1,33 @@
+# Ignore rules for the backend image build (docker build -f backend/Dockerfile .).
+#
+# Docker only reads .dockerignore from the build-context ROOT, so before
+# building copy this file there:
+#   cp backend/.dockerignore .dockerignore
+# (Do not commit the copied file — this one is the source of truth.)
+
+# dependency trees (reinstalled in the image)
+node_modules
+**/node_modules
+
+# previous builds
+dist
+**/dist
+
+# secrets / local environment — injected at deploy time, never baked in
+.env
+.env.*
+!.env.example
+
+# git + editor noise
+.git
+.github
+*.log
+.DS_Store
+
+# the frontend ships as static files, not in the backend image
+frontend/node_modules
+frontend/dist
+
+# local scratch
+coverage
+.nyc_output
