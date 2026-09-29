@@ -85,7 +85,15 @@ Reviewer workflow:
 
 ## Role management + bootstrapping the first super_admin
 
-**There is no default admin account.** Bootstrap:
+**There is no default admin account.** Two ways to bootstrap:
+
+**Option A — one-time endpoint (no SQL):** on a fresh install with zero
+admins, `POST /api/v1/auth/bootstrap-superadmin` with
+`{ "email", "password", "displayName" }` creates the user and grants
+`super_admin` in one step. Once any admin exists the endpoint returns 404,
+so it can never be used for later escalation.
+
+**Option B — SQL:**
 
 1. Sign up normally at `/signup` (this creates a row in `users`).
 2. Find the user's id:
