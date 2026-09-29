@@ -8,6 +8,7 @@ import { errorHandler } from "./middleware/errors.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { adminRouter } from "./routes/admin.js";
 import { authRouter } from "./routes/auth.js";
+import { bootstrapRouter } from "./routes/bootstrap.js";
 import { publicRouter } from "./routes/public.js";
 import { userRouter } from "./routes/user.js";
 
@@ -35,6 +36,7 @@ export async function buildApp(): Promise<express.Express> {
   });
 
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/auth", bootstrapRouter);
   app.use("/api/v1", publicRouter);
   app.use("/api/v1", userRouter);
   app.use("/api/v1/admin", adminRouter);
