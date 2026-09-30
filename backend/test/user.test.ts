@@ -40,6 +40,25 @@ test("favorites are isolated between users", async () => {
   assert.equal(del.status, 200);
 });
 
+test("favorites list includes nested website/model objects (frontend contract)", async () => {
+  const u = await signupHelper(base, "favnested@example.com");
+  const add = await api(base, "POST", "/api/v1/favorites", {
+    token: u.token,
+    body: { kind: "website", websiteId },
+  });
+  assert.equal(add.status, 201);
+  const list = await api(base, "GET", "/api/v1/favorites", { token: u.token });
+  const items = (list.json as { data: { kind: string; website: { id: string; name: string; slug: string } | null; model: unknown }[] }).data;
+  assert.equal(items.length, 1);
+  // The Favorites page filters on f.website / f.model — these must be populated.
+  assert.equal(items[0].kind, "website");
+  assert.ok(items[0].website, "nested website object must be present");
+  assert.equal(items[0].website!.id, websiteId);
+  assert.equal(items[0].website!.name, "FavSite");
+  assert.equal(items[0].website!.slug, "favsite");
+  assert.equal(items[0].model, null);
+});
+
 test("favorite requires exactly one valid target", async () => {
   const none = await api(base, "POST", "/api/v1/favorites", {
     token: u1.token,
@@ -82,6 +101,47 @@ test("stacks CRUD with items, scoped to owner", async () => {
 
   const del = await api(base, "DELETE", `/api/v1/stacks/${stackId}`, { token: u1.token });
   assert.equal(del.status, 200);
+});
+
+test("stacks: items saved inline on create (save-recommendation flow)", async () => {
+  const u = await signupHelper(base, "stackinline@example.com");
+  const created = await api(base, "POST", "/api/v1/stacks", {
+    token: u.token,
+    body: {
+      title: "Inline stack",
+      goalText: "test goal",
+      items: [
+        { requirementLabel: "FavSite", websiteId, reason: "Coding; Free plan", confidence: "4", verificationStatus: "partially_verified" },
+        { requirementLabel: "Second", reason: "no link" },
+      ],
+    },
+  });
+  assert.equal(created.status, 201);
+  const stack = data(created) as { items: { position: number; requirementLabel: string; websiteId: string | null; reason: string }[] };
+  assert.equal(stack.items.length, 2, "items sent with create must be persisted");
+  assert.equal(stack.items[0].position, 0);
+  assert.equal(stack.items[1].position, 1);
+  assert.equal(stack.items[0].websiteId, websiteId);
+  assert.equal(stack.items[0].reason, "Coding; Free plan");
+});
+
+test("stacks: item position auto-assigns when omitted", async () => {
+  const u = await signupHelper(base, "stackpos@example.com");
+  const created = await api(base, "POST", "/api/v1/stacks", {
+    token: u.token,
+    body: { title: "Pos stack" },
+  });
+  const stackId = (data(created) as { id: string }).id;
+  for (let i = 0; i < 2; i++) {
+    const item = await api(base, "POST", `/api/v1/stacks/${stackId}/items`, {
+      token: u.token,
+      body: { requirementLabel: `req ${i}` },
+    });
+    assert.equal(item.status, 201, `item ${i} without position must not 500`);
+  }
+  const got = await api(base, "GET", `/api/v1/stacks/${stackId}`, { token: u.token });
+  const items = (data(got) as { items: { position: number }[] }).items;
+  assert.deepEqual(items.map((x) => x.position), [0, 1]);
 });
 
 test("profile and preferences round-trip", async () => {

@@ -604,10 +604,27 @@ export const favoriteCreateSchema = z.object({
 export const stackCreateSchema = z.object({
   title: z.string().min(1).max(200),
   goalText: z.string().max(2000).optional(),
+  /** Optional items saved together with the stack (e.g. "save recommendation as stack"). */
+  items: z
+    .array(
+      z.object({
+        requirementLabel: z.string().max(300).optional(),
+        websiteId: z.string().uuid().nullable().optional(),
+        modelId: z.string().uuid().nullable().optional(),
+        reason: z.string().max(2000).optional(),
+        freeStatus: z.string().max(120).optional(),
+        requirementsSummary: z.string().max(2000).optional(),
+        limitsSummary: z.string().max(2000).optional(),
+        confidence: z.string().max(120).optional(),
+        verificationStatus: z.enum(VERIFICATION_STATUSES).optional(),
+      }),
+    )
+    .max(50)
+    .optional(),
 });
 
 export const stackItemCreateSchema = z.object({
-  position: z.number().int().min(0).max(1000).default(0),
+  position: z.number().int().min(0).max(1000).optional(),
   requirementLabel: z.string().max(300).optional(),
   websiteId: z.string().uuid().nullable().optional(),
   modelId: z.string().uuid().nullable().optional(),

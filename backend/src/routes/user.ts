@@ -40,10 +40,37 @@ userRouter.get(
       (await query("SELECT COUNT(*)::int AS n FROM user_favorites WHERE user_id = $1", [req.user!.id])).rows[0].n,
     );
     const { rows } = await query(
-      `SELECT * FROM user_favorites WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      `SELECT uf.id, uf.user_id, uf.kind, uf.website_id, uf.model_id, uf.stack_id, uf.created_at,
+              w.id AS w_id, w.name AS w_name, w.slug AS w_slug, w.tagline AS w_tagline, w.logo_url AS w_logo_url,
+              m.id AS m_id, m.name AS m_name, m.slug AS m_slug,
+              s.id AS s_id, s.title AS s_title
+         FROM user_favorites uf
+    LEFT JOIN ai_websites w ON w.id = uf.website_id AND w.deleted_at IS NULL
+    LEFT JOIN ai_models m ON m.id = uf.model_id AND m.deleted_at IS NULL
+    LEFT JOIN saved_stacks s ON s.id = uf.stack_id
+        WHERE uf.user_id = $1 ORDER BY uf.created_at DESC LIMIT $2 OFFSET $3`,
       [req.user!.id, limit, (page - 1) * limit],
     );
-    res.json({ data: camelRows(rows), meta: paginationMeta(page, limit, total) });
+    const data = rows.map((r) => {
+      const fav = camelRow({
+        id: r.id,
+        user_id: r.user_id,
+        kind: r.kind,
+        website_id: r.website_id,
+        model_id: r.model_id,
+        stack_id: r.stack_id,
+        created_at: r.created_at,
+      });
+      return {
+        ...fav,
+        website: r.w_id
+          ? { id: String(r.w_id), name: String(r.w_name), slug: String(r.w_slug), tagline: r.w_tagline, logoUrl: r.w_logo_url }
+          : null,
+        model: r.m_id ? { id: String(r.m_id), name: String(r.m_name), slug: String(r.m_slug) } : null,
+        stack: r.s_id ? { id: String(r.s_id), title: String(r.s_title) } : null,
+      };
+    });
+    res.json({ data, meta: paginationMeta(page, limit, total) });
   }),
 );
 
@@ -134,7 +161,50 @@ userRouter.post(
       "INSERT INTO saved_stacks (user_id, title, goal_text) VALUES ($1, $2, $3) RETURNING *",
       [req.user!.id, req.body.title, req.body.goalText ?? null],
     );
-    res.status(201).json({ data: await serializeStack(String(rows[0].id), req.user!.id) });
+    const stackId = String(rows[0].id);
+    // Persist any items sent with the create call (e.g. saving a recommendation
+    // as a stack). Positions follow the array order; referenced entities must exist.
+    const items = (req.body.items ?? []) as {
+      requirementLabel?: string;
+      websiteId?: string | null;
+      modelId?: string | null;
+      reason?: string;
+      freeStatus?: string;
+      requirementsSummary?: string;
+      limitsSummary?: string;
+      confidence?: string;
+      verificationStatus?: string;
+    }[];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.websiteId) {
+        const w = await query("SELECT id FROM ai_websites WHERE id = $1 AND deleted_at IS NULL", [it.websiteId]);
+        if (w.rows.length === 0) throw notFound("Website not found");
+      }
+      if (it.modelId) {
+        const m = await query("SELECT id FROM ai_models WHERE id = $1 AND deleted_at IS NULL", [it.modelId]);
+        if (m.rows.length === 0) throw notFound("Model not found");
+      }
+      await query(
+        `INSERT INTO stack_items (stack_id, position, requirement_label, website_id, model_id,
+          reason, free_status, requirements_summary, limits_summary, confidence, verification_status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::verification_status)`,
+        [
+          stackId,
+          i,
+          it.requirementLabel ?? null,
+          it.websiteId ?? null,
+          it.modelId ?? null,
+          it.reason ?? null,
+          it.freeStatus ?? null,
+          it.requirementsSummary ?? null,
+          it.limitsSummary ?? null,
+          it.confidence ?? null,
+          it.verificationStatus ?? null,
+        ],
+      );
+    }
+    res.status(201).json({ data: await serializeStack(stackId, req.user!.id) });
   }),
 );
 
@@ -195,13 +265,22 @@ userRouter.post(
     ]);
     if (stack.rows.length === 0) throw notFound("Stack not found");
     const b = req.body;
+    // Auto-assign the next position when the caller doesn't specify one, so a
+    // missing position never collides with the (stack_id, position) unique key.
+    let position = b.position;
+    if (position === undefined || position === null) {
+      const max = await query("SELECT COALESCE(MAX(position), -1)::int AS m FROM stack_items WHERE stack_id = $1", [
+        pp(req.params, "id"),
+      ]);
+      position = Number(max.rows[0].m) + 1;
+    }
     const { rows } = await query(
       `INSERT INTO stack_items (stack_id, position, requirement_label, website_id, model_id, reason,
         free_status, requirements_summary, limits_summary, confidence, verification_status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [
         pp(req.params, "id"),
-        b.position ?? 0,
+        position,
         b.requirementLabel ?? null,
         b.websiteId ?? null,
         b.modelId ?? null,

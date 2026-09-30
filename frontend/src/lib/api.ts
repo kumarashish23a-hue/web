@@ -310,9 +310,20 @@ export const stacksApi = {
   create: (title: string, goalText: string) =>
     post<SavedStack>('/stacks', { title, goalText }),
   remove: (id: string) => del<void>(`/stacks/${id}`),
-  /** Save a recommendation result as a named stack. */
+  /** Save a recommendation result as a named stack (maps RecommendItem -> stack item input). */
   saveRecommendation: (title: string, goalText: string, items: RecommendItem[]) =>
-    post<SavedStack>('/stacks', { title, goalText, items }),
+    post<SavedStack>('/stacks', {
+      title,
+      goalText,
+      items: items.map((it) => ({
+        requirementLabel: it.name,
+        websiteId: it.kind === 'website' ? it.id : null,
+        modelId: it.kind === 'model' ? it.id : null,
+        reason: it.reasons.join('; '),
+        confidence: it.score != null ? String(it.score) : undefined,
+        verificationStatus: it.verification?.status ?? undefined,
+      })),
+    }),
 };
 
 export const profileApi = {
