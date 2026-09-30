@@ -527,16 +527,18 @@ export interface RecommendResponse {
 /* ------------------------------------------------------------------ */
 
 export const emailSchema = z.string().email().max(254);
-export const passwordSchema = z.string().min(8).max(128);
+/** Login identifier: a username or an email address (max 254 chars). */
+export const identifierSchema = z.string().trim().min(1).max(254);
+export const passwordSchema = z.string().min(4).max(128);
 
 export const signupSchema = z.object({
-  email: emailSchema,
+  email: identifierSchema,
   password: passwordSchema,
   displayName: z.string().min(1).max(120).optional(),
 });
 
 export const loginSchema = z.object({
-  email: emailSchema,
+  email: identifierSchema,
   password: z.string().min(1).max(128),
 });
 

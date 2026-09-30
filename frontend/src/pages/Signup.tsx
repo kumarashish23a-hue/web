@@ -62,15 +62,15 @@ export function Signup() {
             />
           </div>
           <div className="field">
-            <label htmlFor="signup-email">Email</label>
+            <label htmlFor="signup-email">Email or username</label>
             <input
               id="signup-email"
-              type="email"
+              type="text"
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
           <div className="field">
@@ -82,7 +82,7 @@ export function Signup() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={4}
               autoComplete="new-password"
             />
           </div>

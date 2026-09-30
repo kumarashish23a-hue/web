@@ -36,16 +36,28 @@ test("signup rejects duplicate email with 409", async () => {
 });
 
 test("zod rejects bad signup input with 400", async () => {
-  const badEmail = await api(base, "POST", "/api/v1/auth/signup", {
-    body: { email: "not-an-email", password: "password123" },
+  const emptyId = await api(base, "POST", "/api/v1/auth/signup", {
+    body: { email: "", password: "password123" },
   });
-  assert.equal(badEmail.status, 400);
-  assert.equal((badEmail.json as { error: { code: string } }).error.code, "VALIDATION_ERROR");
+  assert.equal(emptyId.status, 400);
+  assert.equal((emptyId.json as { error: { code: string } }).error.code, "VALIDATION_ERROR");
 
   const shortPw = await api(base, "POST", "/api/v1/auth/signup", {
-    body: { email: "x@example.com", password: "short" },
+    body: { email: "x@example.com", password: "abc" },
   });
   assert.equal(shortPw.status, 400);
+});
+
+test("signup and login accept a plain username identifier", async () => {
+  const r = await api(base, "POST", "/api/v1/auth/signup", {
+    body: { email: "admin", password: "pass", displayName: "Admin" },
+  });
+  assert.equal(r.status, 201);
+
+  const ok = await api(base, "POST", "/api/v1/auth/login", {
+    body: { email: "admin", password: "pass" },
+  });
+  assert.equal(ok.status, 200);
 });
 
 test("login verifies password and me returns the user", async () => {

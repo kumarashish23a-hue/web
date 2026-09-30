@@ -33,8 +33,8 @@ export function ResetPassword() {
   const setNewPassword = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (password.length < 4) {
+      setError('Password must be at least 4 characters.');
       return;
     }
     if (password !== confirm) {

@@ -52,15 +52,15 @@ export function Login() {
         {error && <p className="form-error">{error}</p>}
         <form onSubmit={onSubmit}>
           <div className="field">
-            <label htmlFor="login-email">Email</label>
+            <label htmlFor="login-email">Email or username</label>
             <input
               id="login-email"
-              type="email"
+              type="text"
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
           <div className="field">
