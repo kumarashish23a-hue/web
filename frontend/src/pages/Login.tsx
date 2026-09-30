@@ -52,7 +52,7 @@ export function Login() {
         {error && <p className="form-error">{error}</p>}
         <form onSubmit={onSubmit}>
           <div className="field">
-            <label htmlFor="login-email">Email or username</label>
+            <label htmlFor="login-email">ID</label>
             <input
               id="login-email"
               type="text"

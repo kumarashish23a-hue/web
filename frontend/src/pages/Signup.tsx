@@ -62,7 +62,7 @@ export function Signup() {
             />
           </div>
           <div className="field">
-            <label htmlFor="signup-email">Email or username</label>
+            <label htmlFor="signup-email">ID</label>
             <input
               id="signup-email"
               type="text"
